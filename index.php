@@ -9,7 +9,7 @@ $port = 993; // IMAP
 
 $reader = new MailReader($host, $user, $user, $port);
 
-$newMessages = $reader->getAllUnseenMessages();
+$newMessages = $reader->getAllMessages('UNSEEN');
 
 foreach ($newMessages as $messageNum){
     $parts = $reader->fetchContent($messageNum);

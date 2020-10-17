@@ -1,12 +1,24 @@
 <?php
 
+/**
+ * Class MailReader
+ *
+ * Class Mail client that works with Imap php extension
+ *
+ * @author Dejan Jovic
+ * @licence http://mit-license.org/
+ *
+ * @link https://github.com/dekijovic/php-MailReader
+ */
 class MailReader
 {
+    const CRITERIA = ['ALL', 'ANSWERED', 'BCC', 'BEFORE', 'BODY', 'CC', 'DELETED', 'DELETED', 'FLAGGED', 'FROM', 'KEYWORD',
+        'NEW', 'OLD', 'ON', 'RECENT', 'SEEN', 'SINCE', 'SUBJECT', 'TEXT', 'TO', 'UNANSWERED', 'UNDELETED', 'UNFLAGGED', 'UNKEYWORD', 'UNSEEN'];
+
+    /** @var false|resource  */
     protected $conn;
-    protected $email;
+    /** @var string|null  */
     protected $host;
-    protected $port;
-    protected $password;
 
 
     /**
@@ -18,36 +30,25 @@ class MailReader
      */
     public function __construct($host, $email, $password, $port)
     {
-        $this->email = $email;
-        $this->password = $password;
         if(substr($host, 0,1) == '}') {
             $this->host = $host;
         }else{
             $this->host = '{' . $host . ':' . $port . '/ssl}INBOX';
         }
-        $this->port = $port;
-        $this->conn = imap_open($this->host, $this->email, $this->password) or die('Cannot connect to Mail: ' . imap_last_error());
-        if (!preg_match("/Resource.id.*/", (string) $this->conn)) {
-            return $this->conn; //return error message
+        $this->conn = imap_open($this->host, $email, $password) or die('Cannot connect to Mail: ' . imap_last_error());
+    }
+
+    /**
+     * @param string $criteria
+     * @return array|null
+     */
+    public function getAllMessages($criteria = 'ALL'):? array
+    {
+        if(array_search($criteria, self::CRITERIA)){
+            $arr = imap_search($this->conn, $criteria);
         }
-    }
 
-    /**
-     * @return array|false
-     */
-    public function getAllMessages():? array
-    {
-        return imap_search($this->conn, 'ALL');
-    }
-
-    /**
-     * @return array|false
-     */
-    public function getAllUnseenMessages() :? array
-    {
-        $emails = imap_search($this->conn, 'UNSEEN');
-
-        return $emails;
+        return $arr ?? null;
     }
 
     /**
@@ -63,7 +64,10 @@ class MailReader
     }
 
     /**
+     * Fetch content form mail message.
+     *
      * @param $numEmail
+     * @return array
      */
     public function fetchContent($numEmail)
     {
@@ -84,6 +88,8 @@ class MailReader
     }
 
     /**
+     * Download Attachment.
+     *
      * @param $content
      * @param $numEmail
      * @param $index
@@ -145,6 +151,50 @@ class MailReader
         }else{
             return $data;
         }
+    }
+
+    /**
+     * Create mailbox and subscribe on
+     *
+     * @param string $mailbox Name of mailbox
+     */
+    private function createMailbox($mailbox)
+    {
+        $mailbox = imap_getmailboxes($this->conn, $this->host.$mailbox, '*');
+        if(!$mailbox) {
+            imap_createmailbox($this->conn, $this->host.$mailbox);
+            imap_subscribe( $this->conn, $this->host.$mailbox );
+        }
+    }
+
+    /**
+     * Open Mailbox
+     * @param $mailbox
+     */
+    public function openMailbox($mailbox)
+    {
+        imap_reopen($this->conn, $this->host.$mailbox);
+    }
+
+    /**
+     * Move mail to different folder.
+     *
+     * @param $num Email Number in current mailbox
+     * @param $mailbox Mailbox destination
+     */
+    public function moveEmailTo($num, $mailbox)
+    {
+        imap_mail_move($this->conn, $num,$mailbox);
+        imap_expunge($this->conn);
+
+    }
+
+    /**
+     * Close mail connection
+     */
+    public function close()
+    {
+        imap_close($this->conn);
     }
 
 }

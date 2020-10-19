@@ -52,7 +52,8 @@ class MailReader
     }
 
     /**
-     * Get Sender
+     * Get Sender.
+     *
      * @param $numEmail
      * @return false|string
      */
@@ -139,7 +140,7 @@ class MailReader
      * @param $attachmentPart
      * @param $numEmail
      * @param $partIndex
-     * @return false|string
+     * @return string|null
      */
     public function getEncodedContent($attachmentPart, $numEmail, $partIndex):? string
     {
@@ -158,7 +159,7 @@ class MailReader
      *
      * @param string $mailbox Name of mailbox
      */
-    private function createMailbox($mailbox)
+    public function createMailbox($mailbox)
     {
         $mailbox = imap_getmailboxes($this->conn, $this->host.$mailbox, '*');
         if(!$mailbox) {
@@ -179,8 +180,8 @@ class MailReader
     /**
      * Move mail to different folder.
      *
-     * @param $num Email Number in current mailbox
-     * @param $mailbox Mailbox destination
+     * @param $num | Email Number in current mailbox
+     * @param $mailbox | Mailbox destination
      */
     public function moveEmailTo($num, $mailbox)
     {
